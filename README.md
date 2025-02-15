@@ -60,31 +60,33 @@ To accommodate the limitations, I structured the network as follows:
 
 3. Log in to the Web UI and configure:
    - **Management Profile:** Allow SSH, HTTPS, and ICMP only from a trusted home IP.
+   - Configure **DNS and NTP**.
    - **IP Allocation:** Currently, interfaces obtain IP addresses via DHCP, where Azure assigns IPs based on the interface settings of VM. However, we will later switch to static IPs to allow for customized service route configurations. Uncheck "Automatically create default route pointing to default gateway provided by server"
    - **Virtual Router:**
      - Default route (`eth1`) via **10.0.1.1** (Azure Gateway in FW-Untrust subnet)
      - Routes to **Private1** and **Private2** subnets via **eth2** (next-hop 10.0.2.1)
-   - **DNS and NTP Configuration**
+   ![4-6 VR](https://github.com/user-attachments/assets/99fb08bc-f7b7-4d2d-9bef-93876558a954)
 
 ![4-6 VR](https://github.com/user-attachments/assets/88c17c96-adda-423a-859e-91139105c1bf) 
 
 ### Step 3: Adjusting Network Interfaces
 
 - **Stop VM and attach Untrust and Trust interfaces** with appropriate IPs.
-- **Detach public IP** from the management interface and reassign it to **Untrust**, ensuring secure remote access.
+- Create and attach **Network Security Group** allowing any traffic to aforemntioned interfaces.
+- **Detach public IP** from the management interface and reassign it to **Untrust**.
 - This configuration ensures:
-  - The firewall is only accessible externally via **Untrust**.
+  - The firewall is only accessible externally via **Untrust** from our home network.
   - The **Mgmt interface** remains private, reserving access for internal use or emergencies.
 
 ![7 vm int dhcp](https://github.com/user-attachments/assets/cdcfc131-85b6-420a-872d-9ce8bfbd09f7)
 
 ## Enforcing Firewall-Centric Routing
 
-By default, Azure routes traffic between subnets directly. To force traffic through the firewall:
+The next step is crucial: integrating our firewall into Azure's routing. Since this was my first time working with Azure, I encountered a challenge — Azure’s overlay network, by default, routes traffic directly between hosts across subnets. To ensure traffic inspection by firewall, we must manually redirect traffic through the firewall:
 
 1. **Create a Route Table for `Private1` and `Private2`:**
    - **Within-VNet Rule:** Directs all `Mini_SOC_VNet` traffic (`/16`) to the firewall (Virtual Appliance).
-   - **Within-Subnet Rule:** Ensures intra-subnet /24 traffic remains local (VNetLocal) to prevent accidental redirection.
+   - **Within-Subnet Rule:** Ensures intra-subnet (`/24`) traffic remains local (VNetLocal) to prevent accidental redirection.
    - **Default Route:** Points to the internet via Azure Gateway (for initial SSH access, will be changed later).
 ![6-4 azure vm route private](https://github.com/user-attachments/assets/13eefb5b-80e1-4333-a039-5b5ee8e2ff35) 
 
@@ -148,18 +150,15 @@ Currently outbound internet traffic goes through Azure GW. To route outbound tra
 
 Once VPN and FW are configured, we can test connectivity:
    - **Test Firewall connectivity** Log in to Palo via it's Mgmt interface private IP.
-   - **SSH into a VMs:** Use SSH to connect to a Debian VM using its private IP to ensure that traffic is properly routed through the VPN.
+   - **SSH into a Debian VMs:** Use SSH to connect to a Debian VM using its private IP to ensure that traffic is properly routed through the VPN.
    - **Ping each other's private IP** to check connectivity between subnets.
    - **Test Internet Access via Firewall:** From the connected VPN client, perform a `curl ipinfo.io/ip` to confirm that VMs can go to internet via the firewall.
 
 ## Voila! our network is ready.
 ![10-8 test](https://github.com/user-attachments/assets/2096633d-bdf1-4a9c-a91e-a264a9ff1d21)
 
-If any of these steps fail, review the route tables, firewall rules, and VPN configuration to identify potential misconfigurations.
 
-
-
-## Finalizing Security & Optimizing policies
+## Let's optimize security policies and finalize out setup
 
 1. **Tighten Security Policies:**
    - Make rules **more granular**. They should be as strict as possible.
@@ -171,7 +170,7 @@ If any of these steps fail, review the route tables, firewall rules, and VPN con
 
 3. **Restrict Firewall Management Access:**
    - Remove the **management profile** from `Untrust`.
-   - Configure service routes to use **Untrust interface** for necessary external services.
+   - Change Untrust interface IP to **static**. Configure service routes to use **Untrust interface** for necessary external services.
 ![11-3 service routes](https://github.com/user-attachments/assets/cbf1749e-f52c-4e88-8e4e-d2710045b598)
 
 ## Conclusion
