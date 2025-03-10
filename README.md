@@ -105,24 +105,28 @@ The next step is crucial: integrating our firewall into Azure's routing. Since t
 
 5. Move one of Debian VMs to `DMZ` and attempt connectivity:
    - Ping requests fail due to the **default deny rule** for different zones.
+
 ![9-4 dmz ping traffic](https://github.com/user-attachments/assets/9974fbd9-ad77-4bee-8b34-93f84a72ebcf)
 
    - Create an explicit firewall **policy** to allow `Private1` and `Private2` to reach `DMZ`.
 ![9-7 dmz ping policy](https://github.com/user-attachments/assets/ed43a19d-4de3-4de3-952b-f06d36be1b85)
 
    - Re-test, and observe the logs confirming allowed traffic between hosts in different zones.
+  
 ![9-8 dmz ping traffic](https://github.com/user-attachments/assets/9b5dab23-fc05-48aa-bc31-f29838b38fa9)
 
 ## Enabling Internet Access via Firewall
 
 Currently outbound internet traffic goes through Azure GW. To route outbound traffic through the firewall:
 1. Modify **default routes** in **DMZ, Private1, and Private2** to use the firewall as the **next hop**.
+2. 
 ![10-1 vpn routes](https://github.com/user-attachments/assets/7b2f0bae-d05b-4636-ba47-245c928495c4)
 
 3. This introduces **asymmetric routing**, preventing SSH access to Debian hosts via public IPs.
 4. Instead of configuring **GlobalProtect VPN (overkill for this use case)**, set up **Point-to-Site VPN** in Azure:
    - Detach public IPs from Debian VMs.
    - Create a **Gateway Subnet** in Mini Soc VNet and deploy a **Virtual Network Gateway**. Deploying may take ~20 minutes, let's make a coffee break :)
+  
 ![10 vpn](https://github.com/user-attachments/assets/86520deb-b46c-4997-a066-467825bfd757)
 
    - Go to newly deployed **Virtual Network Gateway** -> **Point-to-Site VPN** and configure address pool and authentication (instructions on certificate generation can be found on internet).
@@ -132,17 +136,21 @@ Currently outbound internet traffic goes through Azure GW. To route outbound tra
 6. Update firewall and Azure routing:
    - Direct all **internet-bound traffic** through the firewall.
    - Edit routes in GatewaySubnet to ensure **VPN traffic** passes through the firewall before reaching Mini SOC subnets.
+   - 
 ![10-3 vpn routes gateway](https://github.com/user-attachments/assets/39cbc281-69d8-400d-b44a-5c07a932a9c9)
 
    - Disable **gateway route propagation** for `Private1`, `Private2`, and `DMZ` but **enable it for FW-Trust subnet**. This will automatically create routes to remote VPN subnet in FW-Trust, where firewall egresses traffic to Trust zone.
+   - 
 ![10-2 vpn route propagation](https://github.com/user-attachments/assets/1f253623-5d92-4824-bf69-a324af67e56f)
 
    - Add a **VPN subnet route** to the **firewall's Virtual Router**.
+   - 
 ![10-4 pa vpn route](https://github.com/user-attachments/assets/73dd97c9-852a-4a01-8f1b-633e821161a0)
 
 7. Update firewall policies:
    - Add policy for VPN traffic.
 ![10-6 vpn policies](https://github.com/user-attachments/assets/994e0970-d485-4b12-a000-bb085ee51d32)
+
    - Add NAT for VPN and internet access 
 ![10-7 vpn nat](https://github.com/user-attachments/assets/a4fc1122-aa2a-4472-a886-73292994856d)
 
@@ -155,6 +163,7 @@ Once VPN and FW are configured, we can test connectivity:
    - **Test Internet Access via Firewall:** From the connected VPN client, perform a `curl ipinfo.io/ip` to confirm that VMs can go to internet via the firewall.
 
 ## Voila! our network is ready.
+
 ![10-8 test](https://github.com/user-attachments/assets/2096633d-bdf1-4a9c-a91e-a264a9ff1d21)
 
 
@@ -163,12 +172,14 @@ Once VPN and FW are configured, we can test connectivity:
 1. **Tighten Security Policies:**
    - Make rules **more granular**. They should be as strict as possible.
    - Set the **default intrazone policy** to **deny** instead of allow.
+   - 
 ![11 refined policies](https://github.com/user-attachments/assets/b7319e21-9db8-47e1-b9f7-d1832844c291)
 
 2. **Tighten NAT policies:**
+3. 
 ![11 refined NAT](https://github.com/user-attachments/assets/1d220383-3553-4554-bb62-81d474c38f06)
 
-3. **Restrict Firewall Management Access:**
+4. **Restrict Firewall Management Access:**
    - Remove the **management profile** from `Untrust`.
    - Change Untrust interface IP to **static**. Configure service routes to use **Untrust interface** for necessary external services.
 ![11-3 service routes](https://github.com/user-attachments/assets/cbf1749e-f52c-4e88-8e4e-d2710045b598)
@@ -183,3 +194,4 @@ This project successfully establishes a **firewall-protected Azure network** wit
 
 This infrastructure lays the foundation for the next phase, where additional security tools (EDR, SIEM, Honeypot) will be introduced.
 
+![Topology UDR](https://github.com/user-attachments/assets/7f37c911-58c7-4789-9ce3-42eb962552f1)
