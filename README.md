@@ -5,12 +5,13 @@
 This project aims to deploy a segmented network in Azure with a firewall, honeypot, target host (equipped with an EDR agent), an EDR server, an attacker host, and a SIEM. The goal is to create a controlled environment for cybersecurity analysis, monitoring, and testing.
 
 ### Components:
-- **Firewall:** Palo Alto VM
-- **Network Segmentation:** Virtual subnets with enforced security policies
-- **EDR & SIEM:** Detection and response mechanisms
-- **Honeypot:** Simulated vulnerable system
-- **Attacker Host:** Controlled environment for testing attacks
 - **Azure Virtual Network (VNet)**: Structured network with routing and access controls
+- **Firewall:** Palo Alto VM
+- **Honeypot:** Simulated vulnerable system
+- **EDR & SIEM:** Detection and response mechanisms
+- **Attacker Host:** Controlled environment for testing attacks
+
+# Phase 1
 
 ## Initial Network Design and Challenges
 
