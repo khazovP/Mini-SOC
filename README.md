@@ -1,4 +1,4 @@
-# Azure Mini SOC Project (phase 1)
+# Azure Mini SOC Project
 
 ## Overview
 
